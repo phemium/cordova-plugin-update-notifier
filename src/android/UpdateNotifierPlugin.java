@@ -55,7 +55,7 @@ public class UpdateNotifierPlugin extends CordovaPlugin {
      */
     @Override
     public void pluginInitialize() {
-        LOG.i(TAG, "Initializing");
+        LOG.i(TAG, "[UpdateNotifier] Plugin initializing");
     }
 
 
@@ -69,12 +69,15 @@ public class UpdateNotifierPlugin extends CordovaPlugin {
      */
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
+        LOG.i(TAG, "[UpdateNotifier] Execute called with action: " + action);
+        
         if ("checkForUpdate".equals(action)) {
             String updateType = null;
             
             // Check if options object was passed
             if (args.length() > 0 && !args.isNull(0)) {
                 updateType = args.getJSONObject(0).optString("updateType", null);
+                LOG.i(TAG, "[UpdateNotifier] Update type override: " + updateType);
             }
             
             checkForUpdate(callbackContext, updateType);
@@ -89,18 +92,21 @@ public class UpdateNotifierPlugin extends CordovaPlugin {
      */
     @Override
     public void onStart() {
+        LOG.i(TAG, "[UpdateNotifier] Activity onStart");
+        
         mInstallListener = new InstallStateUpdatedListener() {
             @Override
             public void onStateUpdate(InstallState state) {
+                LOG.i(TAG, "[UpdateNotifier] Install state updated: " + state.installStatus());
+                
                 if (state.installStatus() == InstallStatus.DOWNLOADED){
+                    LOG.i(TAG, "[UpdateNotifier] Update downloaded, showing snackbar");
                     popupSnackbarForCompleteUpdate();
                 } else if (state.installStatus() == InstallStatus.INSTALLED) {
+                    LOG.i(TAG, "[UpdateNotifier] Update installed");
                     if (mAppUpdateManager != null){
                         mAppUpdateManager.unregisterListener(mInstallListener);
                     }
-
-                } else {
-                    LOG.i(TAG, "InstallStateUpdatedListener: state: " + state.installStatus());
                 }
             }
         };
@@ -111,8 +117,13 @@ public class UpdateNotifierPlugin extends CordovaPlugin {
         // Check if AUTO_CHECK is enabled
         final Boolean autoCheck = preferences.getBoolean("AUTO_CHECK", true);
         
+        LOG.i(TAG, "[UpdateNotifier] AUTO_CHECK setting: " + autoCheck + ", hasPrompted: " + mHasPrompted);
+        
         if (autoCheck && mHasPrompted == false) {
+            LOG.i(TAG, "[UpdateNotifier] Starting automatic update check");
             performUpdateCheck(null);
+        } else {
+            LOG.i(TAG, "[UpdateNotifier] Skipping automatic update check");
         }
     }
 
@@ -124,9 +135,12 @@ public class UpdateNotifierPlugin extends CordovaPlugin {
      * @param updateType The update type to use (flexible or immediate), or null to use default behavior.
      */
     private void checkForUpdate(final CallbackContext callbackContext, final String updateType) {
+        LOG.i(TAG, "[UpdateNotifier] checkForUpdate called from JS with updateType: " + updateType);
+        
         cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                LOG.i(TAG, "[UpdateNotifier] Executing on UI thread");
                 performUpdateCheck(updateType);
                 callbackContext.success();
             }
@@ -140,50 +154,73 @@ public class UpdateNotifierPlugin extends CordovaPlugin {
      * @param updateTypeOverride The update type to use (flexible or immediate), or null to use preference/default behavior.
      */
     private void performUpdateCheck(final String updateTypeOverride) {
+        LOG.i(TAG, "[UpdateNotifier] performUpdateCheck called");
+        
         if (mHasPrompted == true) {
+            LOG.i(TAG, "[UpdateNotifier] Already prompted, skipping");
             return;
         }
 
         if (mAppUpdateManager == null) {
+            LOG.i(TAG, "[UpdateNotifier] Creating AppUpdateManager");
             mAppUpdateManager = AppUpdateManagerFactory.create(cordova.getActivity());
         }
 
+        LOG.i(TAG, "[UpdateNotifier] Getting app update info");
         Task<AppUpdateInfo> appUpdateInfoTask = mAppUpdateManager.getAppUpdateInfo();
 
         appUpdateInfoTask.addOnSuccessListener(new OnSuccessListener<AppUpdateInfo>() {
             @Override
             public void onSuccess(AppUpdateInfo appUpdateInfo) {
+                LOG.i(TAG, "[UpdateNotifier] ✅ App update info received");
+                LOG.i(TAG, "[UpdateNotifier] Update availability: " + appUpdateInfo.updateAvailability());
+                LOG.i(TAG, "[UpdateNotifier] Available version code: " + appUpdateInfo.availableVersionCode());
+                
                 // Determine the update type to use
                 boolean forceImmediate = false;
                 
                 if (updateTypeOverride != null) {
                     // Use the override from JavaScript
                     forceImmediate = updateTypeOverride.equalsIgnoreCase("immediate");
+                    LOG.i(TAG, "[UpdateNotifier] Using JS override - forceImmediate: " + forceImmediate);
                 } else {
                     // Use the preference setting
                     forceImmediate = preferences.getString("androidupdatealerttype", "").equalsIgnoreCase("immediate");
+                    LOG.i(TAG, "[UpdateNotifier] Using preference - forceImmediate: " + forceImmediate);
                 }
 
                 if (!forceImmediate && appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
+                    LOG.i(TAG, "[UpdateNotifier] Starting FLEXIBLE update flow");
                     try {
                         mAppUpdateManager.startUpdateFlowForResult(appUpdateInfo, AppUpdateType.FLEXIBLE, cordova.getActivity(), RC_APP_UPDATE);
                     } catch (IntentSender.SendIntentException e) {
-                        e.printStackTrace();
+                        LOG.e(TAG, "[UpdateNotifier] ❌ Error starting flexible update", e);
                     }
                 } else if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) {
+                    LOG.i(TAG, "[UpdateNotifier] Starting IMMEDIATE update flow");
                     try {
                         mAppUpdateManager.startUpdateFlowForResult(appUpdateInfo, AppUpdateType.IMMEDIATE, cordova.getActivity(), RC_APP_UPDATE);
                     } catch (IntentSender.SendIntentException e) {
-                        e.printStackTrace();
+                        LOG.e(TAG, "[UpdateNotifier] ❌ Error starting immediate update", e);
                     }
                 } else if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+                    LOG.i(TAG, "[UpdateNotifier] Update already downloaded, showing snackbar");
                     popupSnackbarForCompleteUpdate();
                 } else {
-                    LOG.i(TAG, "getAppUpdateInfo: No update available or unhandled case");
+                    LOG.i(TAG, "[UpdateNotifier] No update available or unhandled case");
                 }
             }
         });
+        
+        appUpdateInfoTask.addOnFailureListener(new com.google.android.gms.tasks.OnFailureListener() {
+            @Override
+            public void onFailure(Exception e) {
+                LOG.e(TAG, "[UpdateNotifier] ❌ Failed to get app update info", e);
+            }
+        });
+        
         mHasPrompted = true;
+        LOG.i(TAG, "[UpdateNotifier] Set hasPrompted to true");
     }
 
     /**
@@ -208,8 +245,14 @@ public class UpdateNotifierPlugin extends CordovaPlugin {
      */
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-        if (requestCode == RC_APP_UPDATE && resultCode != RESULT_OK) {
-            LOG.e(TAG, "App Update failed! Result code: " + resultCode);
+        LOG.i(TAG, "[UpdateNotifier] onActivityResult - requestCode: " + requestCode + ", resultCode: " + resultCode);
+        
+        if (requestCode == RC_APP_UPDATE) {
+            if (resultCode != RESULT_OK) {
+                LOG.e(TAG, "[UpdateNotifier] ❌ App Update failed! Result code: " + resultCode);
+            } else {
+                LOG.i(TAG, "[UpdateNotifier] ✅ App Update result OK");
+            }
         }
     }
 
@@ -237,3 +280,4 @@ public class UpdateNotifierPlugin extends CordovaPlugin {
         });
     }
 }
+

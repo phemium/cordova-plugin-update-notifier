@@ -28,9 +28,12 @@ class UpdateNotifierPlugin : CDVPlugin {
 
 
     @objc internal func _didFinishLaunchingWithOptions(_ notification : NSNotification) {
+        print("[UpdateNotifier] App did finish launching")
+        
         // Check if there's an MDM setting to disable update checking
         let disableUpdateCheck = UserDefaults.standard.dictionary(forKey: "com.apple.configuration.managed")?["DisableUpdateCheck"] as? String
         if (disableUpdateCheck == "true") {
+            print("[UpdateNotifier] Update check disabled by MDM")
             return;
         }
 
@@ -38,8 +41,13 @@ class UpdateNotifierPlugin : CDVPlugin {
         let autoCheckString = self.commandDelegate.settings["auto_check"] as? String ?? "true"
         let autoCheck = autoCheckString.lowercased() != "false"
         
+        print("[UpdateNotifier] AUTO_CHECK setting: \(autoCheckString), enabled: \(autoCheck)")
+        
         if autoCheck {
+            print("[UpdateNotifier] Starting automatic update check")
             performUpdateCheck()
+        } else {
+            print("[UpdateNotifier] Automatic update check disabled")
         }
     }
 
@@ -51,11 +59,14 @@ class UpdateNotifierPlugin : CDVPlugin {
      */
     @objc(checkForUpdate:)
     func checkForUpdate(command: CDVInvokedUrlCommand) {
+        print("[UpdateNotifier] checkForUpdate called from JavaScript")
+        
         var alertTypeOverride: String? = nil
         
         // Check if options object was passed
         if command.arguments.count > 0, let options = command.arguments[0] as? [String: Any] {
             alertTypeOverride = options["alertType"] as? String
+            print("[UpdateNotifier] Alert type override: \(alertTypeOverride ?? "none")")
         }
         
         performUpdateCheck(alertTypeOverride: alertTypeOverride)
@@ -71,37 +82,77 @@ class UpdateNotifierPlugin : CDVPlugin {
      * @param alertTypeOverride Optional alert type to override the preference setting
      */
     private func performUpdateCheck(alertTypeOverride: String? = nil) {
-        let siren = Siren.shared
-
-        // Determine which alert type to use
-        let alertType = alertTypeOverride ?? (self.commandDelegate.settings["sirenalerttype"] as? String)
+        print("[UpdateNotifier] performUpdateCheck called")
         
-        if let type = alertType {
-            switch type.lowercased() {
-            case "critical":
-                siren.rulesManager = RulesManager(globalRules: .critical)
-                break;
-            case "annoying":
-                siren.rulesManager = RulesManager(globalRules: .annoying)
-                break;
-            case "persistent":
-                siren.rulesManager = RulesManager(globalRules: .persistent)
-                break;
-            case "hinting":
-                siren.rulesManager = RulesManager(globalRules: .hinting)
-                break;
-            case "relaxed":
-                siren.rulesManager = RulesManager(globalRules: .relaxed)
-                break;
-            default:
-                siren.rulesManager = RulesManager(globalRules: .default)
+        // Ensure we're on the main thread
+        DispatchQueue.main.async {
+            print("[UpdateNotifier] Executing on main thread")
+            let siren = Siren.shared
+
+            // Determine which alert type to use
+            let alertType = alertTypeOverride ?? (self.commandDelegate.settings["sirenalerttype"] as? String)
+            
+            print("[UpdateNotifier] Alert type: \(alertType ?? "default")")
+            
+            if let type = alertType {
+                switch type.lowercased() {
+                case "critical":
+                    print("[UpdateNotifier] Setting rules: critical")
+                    siren.rulesManager = RulesManager(globalRules: .critical)
+                    break;
+                case "annoying":
+                    print("[UpdateNotifier] Setting rules: annoying")
+                    siren.rulesManager = RulesManager(globalRules: .annoying)
+                    break;
+                case "persistent":
+                    print("[UpdateNotifier] Setting rules: persistent")
+                    siren.rulesManager = RulesManager(globalRules: .persistent)
+                    break;
+                case "hinting":
+                    print("[UpdateNotifier] Setting rules: hinting")
+                    siren.rulesManager = RulesManager(globalRules: .hinting)
+                    break;
+                case "relaxed":
+                    print("[UpdateNotifier] Setting rules: relaxed")
+                    siren.rulesManager = RulesManager(globalRules: .relaxed)
+                    break;
+                default:
+                    print("[UpdateNotifier] Setting rules: default")
+                    siren.rulesManager = RulesManager(globalRules: .default)
+                }
+            }
+
+            if let countryCode = self.commandDelegate.settings["sirencountrycode"] as? String {
+                print("[UpdateNotifier] Country code: \(countryCode)")
+                siren.apiManager = APIManager(countryCode: countryCode)
+            }
+
+            // Configure presentation to show immediately
+            print("[UpdateNotifier] Configuring presentation manager")
+            siren.presentationManager = PresentationManager(alertTintColor: nil, appName: nil)
+            
+            // Start Siren check first
+            print("[UpdateNotifier] Calling Siren.wail()")
+            siren.wail { results in
+                switch results {
+                case .success(let updateResults):
+                    print("[UpdateNotifier] ✅ Siren check completed successfully")
+                    print("[UpdateNotifier] Alert action: \(updateResults.alertAction)")
+                case .failure(let error):
+                    print("[UpdateNotifier] ❌ Siren error: \(error.localizedDescription)")
+                }
+            }
+            
+            // After starting Siren, simulate foreground event to trigger the alert
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                print("[UpdateNotifier] Simulating willEnterForeground notification")
+                NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: UIApplication.shared)
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    print("[UpdateNotifier] Simulating didBecomeActive notification")
+                    NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: UIApplication.shared)
+                }
             }
         }
-
-        if let countryCode = self.commandDelegate.settings["sirencountrycode"] as? String {
-            siren.apiManager = APIManager(countryCode: countryCode)
-        }
-
-        siren.wail()
     }
 }
