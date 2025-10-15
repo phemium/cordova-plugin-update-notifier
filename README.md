@@ -41,7 +41,7 @@ cordova plugin add @phemium-costaisa/cordova-plugin-update-notifier
 npm install @phemium-costaisa/cordova-plugin-update-notifier
 ```
 
-> **Note:** No compilation needed! The TypeScript files will be compiled automatically by your Angular/Ionic project.
+> **Note:** El wrapper de Angular viene precompilado y listo para usar. No necesitas configurar nada adicional.
 
 #### Specifying Android Library Versions
 

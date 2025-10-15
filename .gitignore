@@ -9,3 +9,9 @@ Thumbs.db
 *.log
 *.swp
 *.user
+
+# Node modules
+node_modules/
+
+# TypeScript
+*.tsbuildinfo

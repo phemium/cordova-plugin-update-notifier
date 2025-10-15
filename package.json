@@ -1,6 +1,6 @@
 {
   "name": "@phemium-costaisa/cordova-plugin-update-notifier",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "author": "Ayogo Health Inc. <info@ayogo.com>",
   "contributors": [
     "Darryl Pogue <darryl@dpogue.ca>",
@@ -27,19 +27,28 @@
       "types": "./types/index.d.ts",
       "default": "./www/UpdateNotifier.js"
     },
-    "./ngx": "./src/ngx/index.ts"
+    "./ngx": {
+      "types": "./dist/ngx/index.d.ts",
+      "import": "./dist/ngx/index.js",
+      "default": "./dist/ngx/index.js"
+    }
   },
   "typesVersions": {
     "*": {
       "ngx": [
-        "src/ngx/index.ts"
+        "dist/ngx/index.d.ts"
       ]
     }
   },
   "sideEffects": false,
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
   "files": [
     "www/",
     "src/",
+    "dist/",
     "types/",
     "plugin.xml"
   ],
@@ -67,5 +76,9 @@
       "optional": true
     }
   },
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@angular/core": "^18.0.0"
+  }
 }
