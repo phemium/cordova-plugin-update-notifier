@@ -14,18 +14,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android" id="cordova-plugin-update-notifier" version="3.0.0">
-  <name>cordova-plugin-update-notifier</name>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android" id="@phemium-costaisa/cordova-plugin-update-notifier" version="3.0.0">
+  <name>@phemium-costaisa/cordova-plugin-update-notifier</name>
   <description>Cordova plugin for showing a notification for app updates.</description>
   <keywords>cordova,ios,android</keywords>
   <license>Apache 2.0</license>
-  <repo>https://github.com/AyogoHealth/cordova-plugin-update-notifier.git</repo>
-  <issues>https://github.com/AyogoHealth/cordova-plugin-update-notifier/issues</issues>
+  <repo>https://github.com/phemium/cordova-plugin-update-notifier.git</repo>
+  <issues>https://github.com/phemium/cordova-plugin-update-notifier/issues</issues>
 
   <engines>
     <engine name="cordova-ios" version=">= 5.0.0" />
     <engine name="cordova-android" version=">= 9.0.0" />
   </engines>
+
+  <js-module name="UpdateNotifier" src="www/UpdateNotifier.js">
+    <clobbers target="cordova.plugins.UpdateNotifier" />
+  </js-module>
+
+  <preference name="AUTO_CHECK" default="true" />
 
   <platform name="ios">
     <config-file parent="/*" target="config.xml">

@@ -1,5 +1,5 @@
 {
-  "name": "cordova-plugin-update-notifier",
+  "name": "@phemium-costaisa/cordova-plugin-update-notifier",
   "version": "3.0.0",
   "author": "Ayogo Health Inc. <info@ayogo.com>",
   "contributors": [
@@ -10,7 +10,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AyogoHealth/cordova-plugin-update-notifier.git"
+    "url": "git+https://github.com/phemium/cordova-plugin-update-notifier.git"
   },
   "keywords": [
     "cordova",

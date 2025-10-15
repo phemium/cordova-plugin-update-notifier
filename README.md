@@ -14,8 +14,7 @@
   limitations under the License.
 -->
 
-cordova-plugin-update-notifier
-==============================
+# @phemium-costaisa/cordova-plugin-update-notifier
 
 This plugin provides a mechanism for showing an in-app notification when a new
 version of the app is available for download from the App Store or Play Store.
@@ -28,17 +27,16 @@ For Android, this implements the [Play Store In-App Update][playlib] system.
 >
 > Use version 1.x if you are building without AndroidX enabled.
 
-
-Installation
-------------
+## Installation
 
 ### Cordova
 
 ```
-cordova plugin add cordova-plugin-update-notifier
+cordova plugin add @phemium-costaisa/cordova-plugin-update-notifier
 ```
 
 #### Specifying Android Library Versions
+
 You may need to specify specific versions of the Android Material Design or
 Play App Update frameworks, depending on the Android SDK version and build
 tools that your app is targeting. You can override these by specifying versions
@@ -47,7 +45,7 @@ as variables when installing.
 For example:
 
 ```
-cordova plugin add cordova-plugin-update-notifier \
+cordova plugin add @phemium-costaisa/cordova-plugin-update-notifier \
     --variable ANDROIDX_MATERIAL_DESIGN_VERSION=1.8.0 \
     --variable PLAY_APP_UPDATE_SDK_VERSION=2.1.0
 ```
@@ -55,7 +53,7 @@ cordova plugin add cordova-plugin-update-notifier \
 ### Capacitor
 
 ```
-npm install cordova-plugin-update-notifier
+npm install @phemium-costaisa/cordova-plugin-update-notifier
 npx cap sync
 ```
 
@@ -69,12 +67,179 @@ add the following to `app/src/main/res/values/strings.xml`:
 <string name="app_update_install">RESTART</string>
 ```
 
-Configuration Preferences
-------------
+## Usage
+
+By default, the plugin automatically checks for updates when the app starts. However, you can also manually trigger update checks from JavaScript.
+
+### Manual Update Check
+
+To manually check for updates from your JavaScript code:
+
+```javascript
+cordova.plugins.UpdateNotifier.checkForUpdate({
+    successCallback: function () {
+        console.log("Update check completed");
+    },
+    errorCallback: function (error) {
+        console.error("Update check failed:", error);
+    },
+});
+```
+
+#### Specifying Update/Alert Type
+
+You can specify the update type for Android or alert type for iOS when calling `checkForUpdate()`:
+
+```javascript
+// Android: Force immediate update
+cordova.plugins.UpdateNotifier.checkForUpdate({
+    updateType: "immediate", // or "flexible"
+    successCallback: function () {
+        console.log("Update check completed");
+    },
+    errorCallback: function (error) {
+        console.error("Update check failed:", error);
+    },
+});
+
+// iOS: Use critical alert type
+cordova.plugins.UpdateNotifier.checkForUpdate({
+    alertType: "critical", // or "annoying", "persistent", "hinting", "relaxed", "default"
+    successCallback: function () {
+        console.log("Update check completed");
+    },
+    errorCallback: function (error) {
+        console.error("Update check failed:", error);
+    },
+});
+
+// Specify both (platform-specific values will be used automatically)
+cordova.plugins.UpdateNotifier.checkForUpdate({
+    updateType: "immediate", // Android
+    alertType: "critical", // iOS
+    successCallback: function () {
+        console.log("Update check completed");
+    },
+    errorCallback: function (error) {
+        console.error("Update check failed:", error);
+    },
+});
+```
+
+**Android Update Types:**
+
+-   `"flexible"` - Allows the user to continue using the app while downloading
+-   `"immediate"` - Blocks the user until the update is downloaded and installed
+
+**iOS Alert Types:**
+
+-   `"critical"` - Forces user to update immediately
+-   `"annoying"` - Shows alert every time app launches
+-   `"persistent"` - Shows alert once per day
+-   `"hinting"` - Shows alert once per week
+-   `"relaxed"` - Shows alert once per week after 2 weeks
+-   `"default"` - Uses Siren's default behavior
+
+### Disabling Automatic Checks
+
+If you want to disable automatic update checks and only check manually from JavaScript, add the following preference to your `config.xml`:
+
+```xml
+<preference name="AUTO_CHECK" value="false" />
+```
+
+When `AUTO_CHECK` is set to `false`, you must manually call `checkForUpdate()` from your JavaScript code to check for updates.
+
+### Listening for Update Events
+
+You can subscribe to update events to be notified when an update is available. The `onUpdateAvailable` method returns an unsubscribe function:
+
+```javascript
+// Subscribe to update events
+var unsubscribe = cordova.plugins.UpdateNotifier.onUpdateAvailable(function (
+    updateInfo
+) {
+    console.log("Update available!", updateInfo);
+
+    // Android properties
+    if (updateInfo.updateType) {
+        console.log("Update type:", updateInfo.updateType); // "flexible", "immediate", or "downloaded"
+        console.log("Version code:", updateInfo.availableVersionCode);
+    }
+
+    // iOS properties
+    if (updateInfo.platform === "ios") {
+        console.log("Title:", updateInfo.title);
+        console.log("Message:", updateInfo.message);
+        console.log("Alert type:", updateInfo.alertType);
+    }
+});
+
+// To stop listening, call the unsubscribe function
+unsubscribe();
+```
+
+**Multiple Subscribers:**
+
+You can have multiple listeners for the same event:
+
+```javascript
+var unsubscribe1 = cordova.plugins.UpdateNotifier.onUpdateAvailable(function (
+    info
+) {
+    console.log("Listener 1:", info);
+});
+
+var unsubscribe2 = cordova.plugins.UpdateNotifier.onUpdateAvailable(function (
+    info
+) {
+    console.log("Listener 2:", info);
+});
+
+// Unsubscribe individually
+unsubscribe1();
+unsubscribe2();
+```
+
+**Event Data Structure:**
+
+_Android:_
+
+```javascript
+{
+  updateAvailable: true,
+  updateType: "flexible" | "immediate" | "downloaded",
+  availableVersionCode: 123
+}
+```
+
+_iOS:_
+
+```javascript
+{
+  updateAvailable: true,
+  platform: "ios",
+  title: "Update Available",
+  message: "A new version is available...",
+  alertType: "force" | "option" | "skip" | "none"
+}
+```
+
+## Configuration Preferences
+
+### Automatic Update Check
+
+By default, the plugin automatically checks for updates on app launch. You can disable this behavior:
+
+```xml
+<preference name="AUTO_CHECK" value="false" />
+```
+
+When set to `false`, you must manually trigger update checks using the JavaScript API (see Usage section above).
 
 ### Alert Type
 
-Siren's implementation for iOS allows for different alert types (see https://github.com/ArtSabintsev/Siren#screenshots and https://github.com/ArtSabintsev/Siren/blob/6139af3394bc3635c6c8d5255339796feaa7d1a0/Sources/Models/Rules.swift#L12). 
+Siren's implementation for iOS allows for different alert types (see https://github.com/ArtSabintsev/Siren#screenshots and https://github.com/ArtSabintsev/Siren/blob/6139af3394bc3635c6c8d5255339796feaa7d1a0/Sources/Models/Rules.swift#L12).
 You can set the value to "critical", "annoying", "persistent", "hinting" and "relaxed" in config.xml.
 
 ```xml
@@ -101,21 +266,17 @@ Siren's implementation for iOS requires specifying a country code if your app is
 
 For Capacitor, add `"SirenCountryCode": "CA"` to your capacitor.config.json file.
 
-
 ### Managed App Configuration
 
 When deploying an app using an MDM, you can take advantage of [Managed App Configuration](https://developer.apple.com/library/archive/samplecode/sc2279/Introduction/Intro.html) to disable the update check. Simply create a preference called "DisableUpdateCheck" and set it's value to "true".
 
-Supported Platforms
--------------------
+## Supported Platforms
 
-* **Cordova CLI** (cordova-cli >= 9.0.0)
-* **iOS** (cordova-ios >= 5.0.0, or capacitor)
-* **Android** (cordova-android >= 9.0.0, or capacitor) with AndroidX
+-   **Cordova CLI** (cordova-cli >= 9.0.0)
+-   **iOS** (cordova-ios >= 5.0.0, or capacitor)
+-   **Android** (cordova-android >= 9.0.0, or capacitor) with AndroidX
 
-
-Contributing
-------------
+## Contributing
 
 Contributions of bug reports, feature requests, and pull requests are greatly
 appreciated!
@@ -124,13 +285,11 @@ Please note that this project is released with a [Contributor Code of
 Conduct][coc]. By participating in this project you agree to abide by its
 terms.
 
-
-Licence
--------
+## Licence
 
 Released under the Apache 2.0 Licence.  
 Copyright © 2020-2023 Ayogo Health Inc.
 
 [siren]: https://sabintsev.com/Siren/
 [playlib]: https://developer.android.com/guide/playcore/in-app-updates
-[coc]: https://github.com/AyogoHealth/cordova-plugin-update-notifier/blob/main/CODE_OF_CONDUCT.md
+[coc]: https://github.com/phemium/cordova-plugin-update-notifier/blob/main/CODE_OF_CONDUCT.md
