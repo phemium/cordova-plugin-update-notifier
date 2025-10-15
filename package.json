@@ -16,7 +16,32 @@
     "cordova",
     "ecosystem:cordova",
     "cordova-android",
-    "cordova-ios"
+    "cordova-ios",
+    "angular",
+    "ionic"
+  ],
+  "main": "www/UpdateNotifier.js",
+  "types": "types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./www/UpdateNotifier.js"
+    },
+    "./ngx": "./src/ngx/index.ts"
+  },
+  "typesVersions": {
+    "*": {
+      "ngx": [
+        "src/ngx/index.ts"
+      ]
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "www/",
+    "src/",
+    "types/",
+    "plugin.xml"
   ],
   "cordova": {
     "platforms": [
@@ -34,5 +59,13 @@
       "version": ">= 5.0.0"
     }
   ],
+  "peerDependencies": {
+    "@angular/core": ">=14.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@angular/core": {
+      "optional": true
+    }
+  },
   "dependencies": {}
 }

@@ -37,13 +37,13 @@ class UpdateNotifierPlugin : CDVPlugin {
             return;
         }
 
-        // Check if AUTO_CHECK is enabled
-        let autoCheckString = self.commandDelegate.settings["auto_check"] as? String ?? "true"
-        let autoCheck = autoCheckString.lowercased() != "false"
+        // Check if EnableAutomaticUpdates is enabled
+        let enableAutomaticUpdatesString = self.commandDelegate.settings["enableautomaticupdates"] as? String ?? "true"
+        let enableAutomaticUpdates = enableAutomaticUpdatesString.lowercased() != "false"
         
-        print("[UpdateNotifier] AUTO_CHECK setting: \(autoCheckString), enabled: \(autoCheck)")
+        print("[UpdateNotifier] EnableAutomaticUpdates setting: \(enableAutomaticUpdatesString), enabled: \(enableAutomaticUpdates)")
         
-        if autoCheck {
+        if enableAutomaticUpdates {
             print("[UpdateNotifier] Starting automatic update check")
             performUpdateCheck()
         } else {

@@ -31,9 +31,17 @@ For Android, this implements the [Play Store In-App Update][playlib] system.
 
 ### Cordova
 
-```
+```bash
 cordova plugin add @phemium-costaisa/cordova-plugin-update-notifier
 ```
+
+### Angular/Ionic
+
+```bash
+npm install @phemium-costaisa/cordova-plugin-update-notifier
+```
+
+> **Note:** No compilation needed! The TypeScript files will be compiled automatically by your Angular/Ionic project.
 
 #### Specifying Android Library Versions
 
@@ -69,9 +77,243 @@ add the following to `app/src/main/res/values/strings.xml`:
 
 ## Usage
 
-By default, the plugin automatically checks for updates when the app starts. However, you can also manually trigger update checks from JavaScript.
+By default, the plugin automatically checks for updates when the app starts. However, you can also manually trigger update checks from JavaScript or Angular/Ionic.
 
-### Manual Update Check
+### Angular/Ionic Usage
+
+For Angular and Ionic applications, you can use the provided service wrapper:
+
+```typescript
+import { Component, inject, OnInit } from "@angular/core";
+import { UpdateNotifier } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
+
+@Component({
+    selector: "app-example",
+    template: '<button (click)="checkUpdate()">Check for Update</button>',
+})
+export class ExampleComponent implements OnInit {
+    private updateNotifier = inject(UpdateNotifier);
+
+    ngOnInit() {
+        // Check on component initialization
+        this.updateNotifier
+            .checkForUpdate({
+                updateType: "flexible", // Android
+                alertType: "critical", // iOS
+            })
+            .then(() => {
+                console.log("Update check completed");
+            })
+            .catch((error) => {
+                console.error("Update check failed:", error);
+            });
+    }
+
+    checkUpdate() {
+        // Manual check with promise
+        this.updateNotifier.checkForUpdate({});
+    }
+
+    // Or using async/await
+    async checkUpdateAsync() {
+        try {
+            await this.updateNotifier.checkForUpdate({
+                updateType: "immediate",
+                alertType: "persistent",
+            });
+            console.log("Update check completed");
+        } catch (error) {
+            console.error("Update check failed:", error);
+        }
+    }
+}
+```
+
+**TypeScript Options:**
+
+```typescript
+interface UpdateNotifierOptions {
+    updateType?: "flexible" | "immediate"; // Android
+    alertType?:
+        | "critical"
+        | "annoying"
+        | "persistent"
+        | "hinting"
+        | "relaxed"
+        | "default"; // iOS
+    successCallback?: () => void;
+    errorCallback?: (error: any) => void;
+}
+```
+
+#### Advanced Angular Examples
+
+**Check on App Start:**
+
+```typescript
+import { Component, OnInit, inject } from "@angular/core";
+import { Platform } from "@ionic/angular";
+import { UpdateNotifier } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
+
+@Component({
+    selector: "app-root",
+    template: "<ion-router-outlet></ion-router-outlet>",
+})
+export class AppComponent implements OnInit {
+    private platform = inject(Platform);
+    private updateNotifier = inject(UpdateNotifier);
+
+    ngOnInit() {
+        this.platform.ready().then(() => {
+            if (this.updateNotifier.isAvailable) {
+                this.checkForUpdate();
+            }
+        });
+    }
+
+    private async checkForUpdate() {
+        try {
+            await this.updateNotifier.checkForUpdate({
+                updateType: "flexible",
+                alertType: "hinting",
+            });
+        } catch (error) {
+            console.warn("Update check failed:", error);
+        }
+    }
+}
+```
+
+**Platform-Specific Updates:**
+
+```typescript
+import { Component, inject } from "@angular/core";
+import { Platform } from "@ionic/angular";
+import { UpdateNotifier } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
+
+@Component({
+    selector: "app-update-checker",
+    template: '<button (click)="checkUpdate()">Check for Updates</button>',
+})
+export class UpdateCheckerComponent {
+    private platform = inject(Platform);
+    private updateNotifier = inject(UpdateNotifier);
+
+    async checkUpdate() {
+        const isAndroid = this.platform.is("android");
+        const isIOS = this.platform.is("ios");
+
+        if (isAndroid) {
+            await this.updateNotifier.checkForUpdate({
+                updateType: "immediate",
+            });
+        } else if (isIOS) {
+            await this.updateNotifier.checkForUpdate({
+                alertType: "critical",
+            });
+        }
+    }
+}
+```
+
+**Integration with RxJS:**
+
+```typescript
+import { Component, inject } from "@angular/core";
+import { from } from "rxjs";
+import { catchError, tap } from "rxjs/operators";
+import { UpdateNotifier } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
+
+@Component({
+    selector: "app-example",
+    template: '<button (click)="checkUpdate()">Check Update</button>',
+})
+export class ExampleComponent {
+    private updateNotifier = inject(UpdateNotifier);
+
+    checkUpdate() {
+        from(this.updateNotifier.checkForUpdate({}))
+            .pipe(
+                tap(() => console.log("Update check successful")),
+                catchError((error) => {
+                    console.error("Update check failed", error);
+                    throw error;
+                })
+            )
+            .subscribe();
+    }
+}
+```
+
+**Create a Dedicated Service:**
+
+```typescript
+import { Injectable, inject } from "@angular/core";
+import { Platform } from "@ionic/angular";
+import { UpdateNotifier } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
+
+@Injectable({
+    providedIn: "root",
+})
+export class UpdateService {
+    private platform = inject(Platform);
+    private updateNotifier = inject(UpdateNotifier);
+
+    async checkForUpdates(): Promise<void> {
+        if (!this.updateNotifier.isAvailable) {
+            console.warn("Update notifier not available");
+            return;
+        }
+
+        const isAndroid = this.platform.is("android");
+        const isIOS = this.platform.is("ios");
+
+        try {
+            if (isAndroid) {
+                await this.updateNotifier.checkForUpdate({
+                    updateType: "flexible",
+                });
+            } else if (isIOS) {
+                await this.updateNotifier.checkForUpdate({
+                    alertType: "persistent",
+                });
+            }
+        } catch (error) {
+            console.error("Update check failed:", error);
+            throw error;
+        }
+    }
+
+    async forceUpdate(): Promise<void> {
+        if (this.platform.is("android")) {
+            await this.updateNotifier.checkForUpdate({
+                updateType: "immediate",
+            });
+        }
+    }
+}
+```
+
+Then use it in your components:
+
+```typescript
+import { Component, inject, OnInit } from "@angular/core";
+import { UpdateService } from "./services/update.service";
+
+@Component({
+    selector: "app-home",
+    template: "<ion-content>Home Content</ion-content>",
+})
+export class HomePage implements OnInit {
+    private updateService = inject(UpdateService);
+
+    ngOnInit() {
+        this.updateService.checkForUpdates();
+    }
+}
+```
+
+### JavaScript Usage
 
 To manually check for updates from your JavaScript code:
 
@@ -145,10 +387,10 @@ cordova.plugins.UpdateNotifier.checkForUpdate({
 If you want to disable automatic update checks and only check manually from JavaScript, add the following preference to your `config.xml`:
 
 ```xml
-<preference name="AUTO_CHECK" value="false" />
+<preference name="EnableAutomaticUpdates" value="false" />
 ```
 
-When `AUTO_CHECK` is set to `false`, you must manually call `checkForUpdate()` from your JavaScript code to check for updates.
+When `EnableAutomaticUpdates` is set to `false`, you must manually call `checkForUpdate()` from your JavaScript code to check for updates.
 
 ## Configuration Preferences
 
@@ -157,7 +399,7 @@ When `AUTO_CHECK` is set to `false`, you must manually call `checkForUpdate()` f
 By default, the plugin automatically checks for updates on app launch. You can disable this behavior:
 
 ```xml
-<preference name="AUTO_CHECK" value="false" />
+<preference name="EnableAutomaticUpdates" value="false" />
 ```
 
 When set to `false`, you must manually trigger update checks using the JavaScript API (see Usage section above).

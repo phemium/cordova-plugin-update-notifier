@@ -114,12 +114,12 @@ public class UpdateNotifierPlugin extends CordovaPlugin {
         mAppUpdateManager = AppUpdateManagerFactory.create(cordova.getActivity());
         mAppUpdateManager.registerListener(mInstallListener);
 
-        // Check if AUTO_CHECK is enabled
-        final Boolean autoCheck = preferences.getBoolean("AUTO_CHECK", true);
+        // Check if EnableAutomaticUpdates is enabled
+        final Boolean enableAutomaticUpdates = preferences.getBoolean("EnableAutomaticUpdates", true);
         
-        LOG.i(TAG, "[UpdateNotifier] AUTO_CHECK setting: " + autoCheck + ", hasPrompted: " + mHasPrompted);
+        LOG.i(TAG, "[UpdateNotifier] EnableAutomaticUpdates setting: " + enableAutomaticUpdates + ", hasPrompted: " + mHasPrompted);
         
-        if (autoCheck && mHasPrompted == false) {
+        if (enableAutomaticUpdates && mHasPrompted == false) {
             LOG.i(TAG, "[UpdateNotifier] Starting automatic update check");
             performUpdateCheck(null);
         } else {
