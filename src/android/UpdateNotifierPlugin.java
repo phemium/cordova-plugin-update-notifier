@@ -25,10 +25,8 @@ import android.view.View;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.LOG;
-import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
@@ -47,7 +45,6 @@ public class UpdateNotifierPlugin extends CordovaPlugin {
     private AppUpdateManager mAppUpdateManager;
     private InstallStateUpdatedListener mInstallListener;
     private Boolean mHasPrompted = false;
-    private CallbackContext mEventCallbackContext;
 
     private final String TAG = "UpdateNotifierPlugin";
     private static final Integer RC_APP_UPDATE = 577;
@@ -82,40 +79,8 @@ public class UpdateNotifierPlugin extends CordovaPlugin {
             
             checkForUpdate(callbackContext, updateType);
             return true;
-        } else if ("startEventListener".equals(action)) {
-            startEventListener(callbackContext);
-            return true;
         }
         return false;
-    }
-
-
-    /**
-     * Start listening for update events.
-     *
-     * @param callbackContext The callback context for sending events.
-     */
-    private void startEventListener(CallbackContext callbackContext) {
-        mEventCallbackContext = callbackContext;
-        
-        // Keep the callback for multiple events
-        PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
-        result.setKeepCallback(true);
-        callbackContext.sendPluginResult(result);
-    }
-
-
-    /**
-     * Send update available event to JavaScript.
-     *
-     * @param updateInfo Information about the available update.
-     */
-    private void sendUpdateAvailableEvent(JSONObject updateInfo) {
-        if (mEventCallbackContext != null) {
-            PluginResult result = new PluginResult(PluginResult.Status.OK, updateInfo);
-            result.setKeepCallback(true);
-            mEventCallbackContext.sendPluginResult(result);
-        }
     }
 
 
@@ -200,51 +165,18 @@ public class UpdateNotifierPlugin extends CordovaPlugin {
                 }
 
                 if (!forceImmediate && appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
-                    // Send event to JavaScript
-                    try {
-                        JSONObject eventData = new JSONObject();
-                        eventData.put("updateAvailable", true);
-                        eventData.put("updateType", "flexible");
-                        eventData.put("availableVersionCode", appUpdateInfo.availableVersionCode());
-                        sendUpdateAvailableEvent(eventData);
-                    } catch (JSONException e) {
-                        LOG.e(TAG, "Error creating event data", e);
-                    }
-
                     try {
                         mAppUpdateManager.startUpdateFlowForResult(appUpdateInfo, AppUpdateType.FLEXIBLE, cordova.getActivity(), RC_APP_UPDATE);
                     } catch (IntentSender.SendIntentException e) {
                         e.printStackTrace();
                     }
                 } else if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) {
-                    // Send event to JavaScript
-                    try {
-                        JSONObject eventData = new JSONObject();
-                        eventData.put("updateAvailable", true);
-                        eventData.put("updateType", "immediate");
-                        eventData.put("availableVersionCode", appUpdateInfo.availableVersionCode());
-                        sendUpdateAvailableEvent(eventData);
-                    } catch (JSONException e) {
-                        LOG.e(TAG, "Error creating event data", e);
-                    }
-
                     try {
                         mAppUpdateManager.startUpdateFlowForResult(appUpdateInfo, AppUpdateType.IMMEDIATE, cordova.getActivity(), RC_APP_UPDATE);
                     } catch (IntentSender.SendIntentException e) {
                         e.printStackTrace();
                     }
                 } else if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
-                    // Send event for downloaded update
-                    try {
-                        JSONObject eventData = new JSONObject();
-                        eventData.put("updateAvailable", true);
-                        eventData.put("updateType", "downloaded");
-                        eventData.put("availableVersionCode", appUpdateInfo.availableVersionCode());
-                        sendUpdateAvailableEvent(eventData);
-                    } catch (JSONException e) {
-                        LOG.e(TAG, "Error creating event data", e);
-                    }
-
                     popupSnackbarForCompleteUpdate();
                 } else {
                     LOG.i(TAG, "getAppUpdateInfo: No update available or unhandled case");

@@ -17,24 +17,6 @@
 var exec = require("cordova/exec");
 
 var UpdateNotifier = {
-  _listeners: [],
-
-  onUpdateAvailable: function (callback) {
-    if (typeof callback !== "function") {
-      throw new Error("Callback must be a function");
-    }
-    this._listeners.push(callback);
-
-    // Return unsubscribe function
-    var self = this;
-    return function unsubscribe() {
-      var index = self._listeners.indexOf(callback);
-      if (index !== -1) {
-        self._listeners.splice(index, 1);
-      }
-    };
-  },
-
   checkForUpdate: function (options, errorCallback) {
     var successCallback, updateType, alertType;
 
@@ -68,29 +50,6 @@ var UpdateNotifier = {
       args
     );
   },
-
-  _notifyListeners: function (updateInfo) {
-    this._listeners.forEach(function (callback) {
-      try {
-        callback(updateInfo);
-      } catch (error) {
-        console.error("Error in onUpdateAvailable listener:", error);
-      }
-    });
-  },
 };
-
-// Setup event listener
-exec(
-  function (updateInfo) {
-    UpdateNotifier._notifyListeners(updateInfo);
-  },
-  function (error) {
-    console.error("UpdateNotifier event error:", error);
-  },
-  "UpdateNotifier",
-  "startEventListener",
-  []
-);
 
 module.exports = UpdateNotifier;
