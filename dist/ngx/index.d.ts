@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { InjectionToken } from "@angular/core";
 export interface UpdateNotifierOptions {
     /**
      * (Android) Update type: "flexible" or "immediate"
@@ -36,7 +37,7 @@ export interface UpdateNotifierOptions {
  *
  * @example
  * ```typescript
- * import { UpdateNotifier } from '@phemium-costaisa/cordova-plugin-update-notifier';
+ * import { UpdateNotifier } from '@phemium-costaisa/cordova-plugin-update-notifier/ngx';
  *
  * export class MyComponent {
  *   private updateNotifier = inject(UpdateNotifier);
@@ -69,4 +70,16 @@ export declare class UpdateNotifier {
      */
     checkForUpdateWithCallbacks(successCallback: () => void, errorCallback?: (error: any) => void): void;
 }
+/**
+ * Injection token for UpdateNotifier service
+ */
+export declare const UPDATE_NOTIFIER: InjectionToken<UpdateNotifier>;
+/**
+ * Factory function to create UpdateNotifier instance
+ * Use this if you want to provide the service manually
+ */
+export declare function provideUpdateNotifier(): {
+    provide: InjectionToken<UpdateNotifier>;
+    useFactory: () => UpdateNotifier;
+};
 //# sourceMappingURL=index.d.ts.map

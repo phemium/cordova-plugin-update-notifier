@@ -81,18 +81,20 @@ By default, the plugin automatically checks for updates when the app starts. How
 
 ### Angular/Ionic Usage
 
-For Angular and Ionic applications, you can use the provided service wrapper:
+Para aplicaciones Angular e Ionic, puedes usar el wrapper proporcionado. Hay dos formas de usarlo:
+
+#### Opción 1: Usando el InjectionToken (Recomendado)
 
 ```typescript
 import { Component, inject, OnInit } from "@angular/core";
-import { UpdateNotifier } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
+import { UPDATE_NOTIFIER } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
 
 @Component({
     selector: "app-example",
     template: '<button (click)="checkUpdate()">Check for Update</button>',
 })
 export class ExampleComponent implements OnInit {
-    private updateNotifier = inject(UpdateNotifier);
+    private updateNotifier = inject(UPDATE_NOTIFIER);
 
     ngOnInit() {
         // Check on component initialization
@@ -129,6 +131,35 @@ export class ExampleComponent implements OnInit {
 }
 ```
 
+#### Opción 2: Instanciación directa (sin DI)
+
+```typescript
+import { Component, OnInit } from "@angular/core";
+import { UpdateNotifier } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
+
+@Component({
+    selector: "app-example",
+    template: '<button (click)="checkUpdate()">Check for Update</button>',
+})
+export class ExampleComponent implements OnInit {
+    private updateNotifier = new UpdateNotifier();
+
+    ngOnInit() {
+        // Check if plugin is available
+        if (this.updateNotifier.isAvailable) {
+            this.updateNotifier.checkForUpdate({
+                updateType: "flexible",
+                alertType: "critical",
+            });
+        }
+    }
+
+    checkUpdate() {
+        this.updateNotifier.checkForUpdate({});
+    }
+}
+```
+
 **TypeScript Options:**
 
 ```typescript
@@ -153,7 +184,7 @@ interface UpdateNotifierOptions {
 ```typescript
 import { Component, OnInit, inject } from "@angular/core";
 import { Platform } from "@ionic/angular";
-import { UpdateNotifier } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
+import { UPDATE_NOTIFIER } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
 
 @Component({
     selector: "app-root",
@@ -161,7 +192,7 @@ import { UpdateNotifier } from "@phemium-costaisa/cordova-plugin-update-notifier
 })
 export class AppComponent implements OnInit {
     private platform = inject(Platform);
-    private updateNotifier = inject(UpdateNotifier);
+    private updateNotifier = inject(UPDATE_NOTIFIER);
 
     ngOnInit() {
         this.platform.ready().then(() => {
@@ -189,7 +220,7 @@ export class AppComponent implements OnInit {
 ```typescript
 import { Component, inject } from "@angular/core";
 import { Platform } from "@ionic/angular";
-import { UpdateNotifier } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
+import { UPDATE_NOTIFIER } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
 
 @Component({
     selector: "app-update-checker",
@@ -197,7 +228,7 @@ import { UpdateNotifier } from "@phemium-costaisa/cordova-plugin-update-notifier
 })
 export class UpdateCheckerComponent {
     private platform = inject(Platform);
-    private updateNotifier = inject(UpdateNotifier);
+    private updateNotifier = inject(UPDATE_NOTIFIER);
 
     async checkUpdate() {
         const isAndroid = this.platform.is("android");
@@ -222,14 +253,14 @@ export class UpdateCheckerComponent {
 import { Component, inject } from "@angular/core";
 import { from } from "rxjs";
 import { catchError, tap } from "rxjs/operators";
-import { UpdateNotifier } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
+import { UPDATE_NOTIFIER } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
 
 @Component({
     selector: "app-example",
     template: '<button (click)="checkUpdate()">Check Update</button>',
 })
 export class ExampleComponent {
-    private updateNotifier = inject(UpdateNotifier);
+    private updateNotifier = inject(UPDATE_NOTIFIER);
 
     checkUpdate() {
         from(this.updateNotifier.checkForUpdate({}))
@@ -250,14 +281,14 @@ export class ExampleComponent {
 ```typescript
 import { Injectable, inject } from "@angular/core";
 import { Platform } from "@ionic/angular";
-import { UpdateNotifier } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
+import { UPDATE_NOTIFIER } from "@phemium-costaisa/cordova-plugin-update-notifier/ngx";
 
 @Injectable({
     providedIn: "root",
 })
 export class UpdateService {
     private platform = inject(Platform);
-    private updateNotifier = inject(UpdateNotifier);
+    private updateNotifier = inject(UPDATE_NOTIFIER);
 
     async checkForUpdates(): Promise<void> {
         if (!this.updateNotifier.isAvailable) {

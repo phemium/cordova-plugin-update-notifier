@@ -13,19 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-import { Injectable } from "@angular/core";
+import { InjectionToken } from "@angular/core";
 /**
  * Angular service wrapper for the UpdateNotifier Cordova plugin
  *
  * @example
  * ```typescript
- * import { UpdateNotifier } from '@phemium-costaisa/cordova-plugin-update-notifier';
+ * import { UpdateNotifier } from '@phemium-costaisa/cordova-plugin-update-notifier/ngx';
  *
  * export class MyComponent {
  *   private updateNotifier = inject(UpdateNotifier);
@@ -39,7 +33,7 @@ import { Injectable } from "@angular/core";
  * }
  * ```
  */
-let UpdateNotifier = class UpdateNotifier {
+export class UpdateNotifier {
     get plugin() {
         return window.cordova?.plugins?.UpdateNotifier;
     }
@@ -83,11 +77,22 @@ let UpdateNotifier = class UpdateNotifier {
         }
         this.plugin.checkForUpdate(successCallback, errorCallback);
     }
-};
-UpdateNotifier = __decorate([
-    Injectable({
-        providedIn: "root",
-    })
-], UpdateNotifier);
-export { UpdateNotifier };
+}
+/**
+ * Injection token for UpdateNotifier service
+ */
+export const UPDATE_NOTIFIER = new InjectionToken("UpdateNotifier", {
+    providedIn: "root",
+    factory: () => new UpdateNotifier(),
+});
+/**
+ * Factory function to create UpdateNotifier instance
+ * Use this if you want to provide the service manually
+ */
+export function provideUpdateNotifier() {
+    return {
+        provide: UPDATE_NOTIFIER,
+        useFactory: () => new UpdateNotifier(),
+    };
+}
 //# sourceMappingURL=index.js.map

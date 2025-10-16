@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Injectable } from "@angular/core";
+import { InjectionToken } from "@angular/core";
 
 export interface UpdateNotifierOptions {
   /**
@@ -49,7 +49,7 @@ export interface UpdateNotifierOptions {
  *
  * @example
  * ```typescript
- * import { UpdateNotifier } from '@phemium-costaisa/cordova-plugin-update-notifier';
+ * import { UpdateNotifier } from '@phemium-costaisa/cordova-plugin-update-notifier/ngx';
  *
  * export class MyComponent {
  *   private updateNotifier = inject(UpdateNotifier);
@@ -63,9 +63,6 @@ export interface UpdateNotifierOptions {
  * }
  * ```
  */
-@Injectable({
-  providedIn: "root",
-})
 export class UpdateNotifier {
   private get plugin() {
     return (window as any).cordova?.plugins?.UpdateNotifier;
@@ -120,4 +117,26 @@ export class UpdateNotifier {
 
     this.plugin.checkForUpdate(successCallback, errorCallback);
   }
+}
+
+/**
+ * Injection token for UpdateNotifier service
+ */
+export const UPDATE_NOTIFIER = new InjectionToken<UpdateNotifier>(
+  "UpdateNotifier",
+  {
+    providedIn: "root",
+    factory: () => new UpdateNotifier(),
+  }
+);
+
+/**
+ * Factory function to create UpdateNotifier instance
+ * Use this if you want to provide the service manually
+ */
+export function provideUpdateNotifier() {
+  return {
+    provide: UPDATE_NOTIFIER,
+    useFactory: () => new UpdateNotifier(),
+  };
 }
